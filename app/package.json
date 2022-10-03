@@ -1,0 +1,20 @@
+{
+  "name": "avva",
+  "version": "1.0.0",
+  "description": "audio visual / visual audio",
+  "source": "src/index.html",
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jake Albaugh",
+  "license": "ISC",
+  "devDependencies": {
+    "parcel": "^2.7.0"
+  },
+  "dependencies": {
+    "musical-scale": "^1.0.4",
+    "tone": "^14.7.77"
+  }
+}

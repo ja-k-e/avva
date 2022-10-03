@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AVVA</title>
+
+    <style>
+      html,
+      body,
+      canvas {
+        height: 100%;
+        width: 100%;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      canvas {
+        background: black;
+        image-rendering: pixelated;
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas></canvas>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.36/Tone.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/nbriz/color@master/Color.js"></script>
+    <script type="module">
+      import {
+        NOTES_LIBRARY,
+        STEP_NOTATIONS,
+      } from "https://unpkg.com/musical-scale@1.0.4/index.js";
+
+      const notes = Object.values(NOTES_LIBRARY).slice(24, 84);
+      const noteCount = notes.length;
+      const canvas = document.querySelector("canvas");
+      const context = canvas.getContext("2d");
+      const di = 10;
+
+      let initialized = false;
+
+      canvas.addEventListener("click", initialize);
+
+      async function initialize() {
+        if (initialized) {
+          return;
+        }
+        initialized = true;
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: true,
+        });
+
+        const video = document.createElement("video");
+        video.autoplay = true;
+        video.srcObject = stream;
+
+        const synths = [];
+
+        for (let i = 0; i < di; i++) {
+          const synth = new Tone.Synth();
+          synth.oscillator.type = "triangle8";
+          const gain = new Tone.Gain();
+          gain.gain.value = 1 / di;
+          synth.connect(gain);
+          gain.toDestination();
+          synths.push(synth);
+        }
+        const hues = [];
+        Tone.Transport.scheduleRepeat((time) => {
+          synths.forEach((synth, index) => {
+            const play = Math.random() > 0.8;
+            if (play) {
+              const octave = Math.floor(Math.random() * 4 + 2);
+              const note = STEP_NOTATIONS[Math.floor((hues[index] / 360) * 12)];
+              try {
+                const len = octave < 3 ? "4n" : octave < 4 ? "8n" : "16n";
+                synth.triggerAttackRelease(`${note}${octave}`, len, time);
+              } catch (e) {}
+            }
+          });
+        }, "16n");
+
+        Tone.Transport.bpm.value = 90;
+        Tone.Transport.start();
+
+        loop();
+
+        function loop() {
+          requestAnimationFrame(loop);
+
+          canvas.width = di;
+          canvas.height = di;
+          context.clearRect(0, 0, canvas.width, canvas.height);
+
+          context.drawImage(video, 0, 0, di, di);
+
+          const imageData = context.getImageData(0, 0, di, di);
+
+          for (let x = 0; x < di; x++) {
+            let hue = 0;
+            let sat = 0;
+            let val = 0;
+            for (let y = 0; y < di; y++) {
+              const idx = y * di * 4 + x * 4;
+              const [r, g, b] = [...imageData.data].slice(idx, idx + 3);
+              const { h, s, v } = Color.rgb2hsv(r, g, b);
+              hue += h;
+              sat += s;
+              val += v;
+            }
+
+            const avgHue = Math.round(hue / di);
+            hues[x] = avgHue;
+            const { r, g, b } = Color.hsv2rgb(
+              avgHue,
+              Math.round(sat / di),
+              Math.round(val / di)
+            );
+            context.fillStyle = `rgb(${r}, ${g}, ${b})`;
+            context.fillRect(x, 0, di, di);
+          }
+        }
+      }
+    </script>
+  </body>
+</html>

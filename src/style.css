@@ -1,0 +1,187 @@
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: #000;
+  display: flex;
+  margin: 0;
+}
+
+:root {
+  --size: min(100vh, 50vw);
+}
+
+#avva {
+  left: 50%;
+  margin: 0;
+  pointer-events: none;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#avva.hide {
+  display: none;
+}
+
+#avva svg {
+  display: block;
+  fill:rgba(255, 255, 255, 1);
+  height: calc(var(--size) / 8 * 4);
+  width: auto;
+}
+
+section {
+  flex: 1;
+  height: 100vh;
+  position: relative;
+}
+section main {
+  height: 100%;
+  position: relative;
+}
+section main video,
+section main canvas {
+  display: block;
+  object-position: center;
+  transform: scaleX(-1);
+}
+section main canvas {
+  cursor: crosshair;
+  height: 100%;
+  image-rendering: pixelated;
+  object-fit: contain;
+  width: 100%;
+}
+section main video {
+  --di: var(--size);
+  height: var(--di);
+  left: calc(50% - (var(--di) * 0.5));
+  object-fit: cover;
+  pointer-events: none;
+  position: absolute;
+  top: calc(50% - (var(--di) * 0.5));
+  transition: opacity 250ms ease-in-out;
+  width: var(--di);
+  z-index: 98;
+}
+section main video.hide {
+  opacity: 0;
+}
+
+section footer {
+  bottom: 0;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  font-family: system, Helvetica, Arial, sans-serif;
+  height: 100%;
+  justify-content:flex-end;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity 250ms ease-in-out;
+  width: 100%;
+  z-index: 99;
+}
+section footer.hide {
+  opacity: 0;
+}
+section footer > div {
+  --left: 0;
+  --opacity: 1;
+  display: flex;
+  font-size: 0.7em;
+  font-weight: bold;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  line-height: 30px;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+  width: 100%;
+}
+span.guess {
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  left: 50%;
+  position: absolute;
+  text-align: center;
+  top: 1rem;
+  transform: translateX(-50%);
+  z-index: 100;
+}
+div.mode {
+  background-color: hsl(var(--hue), 100%, 40%);
+}
+div.hue {
+  --left: calc(var(--hue) / 360 * 100%);
+  background-image: linear-gradient(
+    to right,
+    hsl(calc(0 / 7 * 360), calc(0.8 * var(--sat)), calc(0.8 * var(--lit))),
+    hsl(calc(1 / 7 * 360), calc(0.8 * var(--sat)), calc(0.8 * var(--lit))),
+    hsl(calc(2 / 7 * 360), calc(0.8 * var(--sat)), calc(0.8 * var(--lit))),
+    hsl(calc(3 / 7 * 360), calc(0.8 * var(--sat)), calc(0.8 * var(--lit))),
+    hsl(calc(4 / 7 * 360), calc(0.8 * var(--sat)), calc(0.8 * var(--lit))),
+    hsl(calc(5 / 7 * 360), calc(0.8 * var(--sat)), calc(0.8 * var(--lit))),
+    hsl(calc(6 / 7 * 360), calc(0.8 * var(--sat)), calc(0.8 * var(--lit))),
+    hsl(calc(7 / 7 * 360), calc(0.8 * var(--sat)), calc(0.8 * var(--lit)))
+  );
+}
+div.sat {
+  --left: var(--sat);
+  background-image: linear-gradient(
+    to right,
+    hsl(var(--hue), 0%, 50%),
+    hsl(var(--hue), 100%, 50%)
+  );
+}
+div.lit {
+  --left: var(--lit);
+  background-image: linear-gradient(
+    to right,
+    hsl(var(--hue), 100%, 0%),
+    hsl(var(--hue), 100%, 50%),
+    hsl(var(--hue), 100%, 100%)
+  );
+}
+section footer > div:not(:first-child):after {
+  background: white;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+  content: "";
+  display: block;
+  height: 100%;
+  left: var(--left);
+  opacity: var(--opacity);
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  width: 2px;
+}
+section footer > div.transition::after {
+  transition: all 250ms ease-in-out;
+}
+section footer > div > span {
+  --left-border: rgba(255, 255, 255, 0.5);
+  --right-border: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 1px 0 0 0 var(--left-border),
+    inset -1px 0 0 0 var(--right-border);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+}
+section footer > div > span:first-child {
+  --left-border: transparent;
+}
+section footer > div > span:last-child {
+  --right-border: transparent;
+}
+}}

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AVVA</title>
+
+    <style>
+      html,
+      body,
+      canvas {
+        height: 100%;
+        width: 100%;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      canvas {
+        background: black;
+      }
+      audio {
+        display: none;
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 999;
+      }
+    </style>
+  </head>
+
+  <body>
+    <audio src="./katy.ogg" controls></audio>
+    <canvas></canvas>
+
+    <script type="module">
+      import { NOTES_LIBRARY } from "https://unpkg.com/musical-scale@1.0.3/index.js";
+      const notes = Object.values(NOTES_LIBRARY).slice(24, 72);
+      const noteCount = notes.length;
+      const canvas = document.querySelector("canvas");
+      const context = canvas.getContext("2d");
+
+      let initialized = false;
+
+      canvas.addEventListener("click", initialize);
+
+      async function initialize() {
+        if (initialized) {
+          return;
+        }
+        initialized = true;
+
+        const audioContext = new AudioContext();
+
+        const oscillators = notes.map(({ frequency }) => {
+          const gain = audioContext.createGain();
+          gain.gain.value = 0;
+          const oscillator = audioContext.createOscillator();
+          oscillator.frequency.value = frequency;
+          oscillator.type = "sine";
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start();
+          return gain;
+        });
+
+        const audio = document.querySelector("audio");
+        audio.volume = 0.01;
+        audio.style.display = "block";
+        const stream = audio.captureStream();
+        // const stream = await navigator.mediaDevices.getUserMedia({
+        //   audio: true,
+        //   video: false,
+        // });
+
+        const analyserFreq = audioContext.createAnalyser();
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyserFreq);
+        analyserFreq.fftSize = 8192 * 2 * 2;
+        const bufferLengthFreq = analyserFreq.frequencyBinCount;
+        const dataArrayFreq = new Uint8Array(bufferLengthFreq);
+        const bandHz = audioContext.sampleRate / 2 / (analyserFreq.fftSize / 2);
+
+        const bandIndexes = notes.map(({ frequency }) =>
+          Math.floor(frequency / bandHz)
+        );
+
+        analyserFreq.getByteFrequencyData(dataArrayFreq);
+        const values = bandIndexes.map(() => 0);
+        const maxVol = (1 / noteCount) * 2;
+
+        loop();
+
+        function loop() {
+          requestAnimationFrame(loop);
+
+          canvas.width = window.innerWidth * 2;
+          canvas.height = window.innerHeight * 2;
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          const width = (1 / noteCount) * canvas.width;
+
+          let x = 0;
+          analyserFreq.getByteFrequencyData(dataArrayFreq);
+          const dom = {};
+          notes.forEach((note, i) => {
+            const neighborL = i ? dataArrayFreq[bandIndexes[i - 1]] : null;
+            const neighborR =
+              i === noteCount - 1 ? null : dataArrayFreq[bandIndexes[i + 1]];
+            const self = dataArrayFreq[bandIndexes[i]];
+            // ignoring bands that have louder neighbors
+            // const freq = self;
+            const freq = self > neighborL && self > neighborR ? self : 0;
+
+            const valuePrev = values[i];
+            const valueNew = Math.pow(Math.min(1, freq / 128), 50);
+            const factor = valueNew < valuePrev ? 1 : 0.015625;
+            const valueEased = valuePrev + (valueNew - valuePrev) * factor;
+            // play notes
+            oscillators[i].gain.linearRampToValueAtTime(
+              valueEased * maxVol,
+              audioContext.currentTime + 0.1
+            );
+            dom[note.notation] = dom[note.notation] || 0;
+            dom[note.notation] = Math.min(
+              valueEased + dom[note.notation],
+              Math.ceil(noteCount / 12)
+            );
+            const hue = Math.round(((note.index % 12) / 12) * 360);
+            context.fillStyle = `hsla(${hue}, 100%, 50%, 1)`;
+            const relW = width * valueEased;
+            const relX = x + (width - relW) / 2;
+            context.fillRect(relX, 0, relW, canvas.height);
+            x += width;
+            values[i] = valueEased;
+          });
+          const keys = Object.keys(dom).map(
+            (a) => `${a}: ${dom[a].toFixed(1)}`
+          );
+          context.font = "bold 24px 'Andale Mono',monospace";
+          context.fillStyle = "white";
+          context.textAlign = "center";
+          context.fillText(
+            keys.join("\n"),
+            canvas.width * 0.5,
+            canvas.height - 24
+          );
+        }
+
+        function loopThreeNotes() {
+          requestAnimationFrame(loopThreeNotes);
+          canvas.width = window.innerWidth * 2;
+          canvas.height = window.innerHeight * 2;
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          const width = (1 / noteCount) * canvas.width;
+
+          let x = 0;
+          analyserFreq.getByteFrequencyData(dataArrayFreq);
+          const dom = {};
+          const freqsToPlay = [];
+          notes.forEach((note, i) => {
+            const neighborL = i ? dataArrayFreq[bandIndexes[i - 1]] : null;
+            const neighborR =
+              i === noteCount - 1 ? null : dataArrayFreq[bandIndexes[i + 1]];
+            const self = dataArrayFreq[bandIndexes[i]];
+            // ignoring bands that have louder neighbors
+            const freq = self > neighborL && self > neighborR ? self : 0;
+
+            const valuePrev = values[i];
+            const valueNew = Math.pow(Math.min(1, freq / 128), 10);
+            const valueEased = valuePrev + (valueNew - valuePrev) * 1;
+            freqsToPlay.push([i, valueEased]);
+            dom[note.notation] = dom[note.notation] || 0;
+            dom[note.notation] = Math.min(
+              valueEased + dom[note.notation],
+              Math.ceil(noteCount / 12)
+            );
+            const hue = Math.round(((note.index % 12) / 12) * 360);
+            context.fillStyle = `hsla(${hue}, 100%, 50%, 1)`;
+            const relW = width * valueEased;
+            const relX = x + (width - relW) / 2;
+            context.fillRect(relX, 0, relW, canvas.height);
+            x += width;
+            values[i] = valueEased;
+          });
+          freqsToPlay
+            .sort((a, b) => b[1] - a[1])
+            .forEach(([i, value], j) => {
+              oscillators[i].gain.linearRampToValueAtTime(
+                j < 5 ? value * maxVol : 0,
+                audioContext.currentTime + 0.05
+              );
+            });
+          const keys = Object.keys(dom).map(
+            (a) => `${a}: ${dom[a].toFixed(1)}`
+          );
+          context.font = "bold 24px 'Andale Mono',monospace";
+          context.fillStyle = "white";
+          context.textAlign = "center";
+          context.fillText(
+            keys.join("\n"),
+            canvas.width * 0.5,
+            canvas.height - 24
+          );
+        }
+
+        function loopAll() {
+          requestAnimationFrame(loopAll);
+          canvas.width = window.innerWidth * 2;
+          canvas.height = window.innerHeight * 2;
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          const width = (1 / noteCount) * canvas.width;
+
+          let x = 0;
+          analyserFreq.getByteFrequencyData(dataArrayFreq);
+          const dom = {};
+          notes.forEach((note, i) => {
+            const neighborL = i ? dataArrayFreq[bandIndexes[i - 1]] : null;
+            const neighborR =
+              i === noteCount - 1 ? null : dataArrayFreq[bandIndexes[i + 1]];
+            const self = dataArrayFreq[bandIndexes[i]];
+            // ignoring bands that have louder neighbors
+            const freq = self > neighborL && self > neighborR ? self : 0;
+
+            const valuePrev = values[i];
+            const valueNew = Math.pow(Math.min(1, freq / 128), 10);
+            const valueEased = valuePrev + (valueNew - valuePrev) * 1;
+            oscillators[i].gain.linearRampToValueAtTime(
+              valueEased * maxVol,
+              audioContext.currentTime + 0.01
+            );
+            dom[note.notation] = dom[note.notation] || 0;
+            dom[note.notation] = Math.min(
+              valueEased + dom[note.notation],
+              Math.ceil(noteCount / 12)
+            );
+            const hue = Math.round(((note.index % 12) / 12) * 360);
+            context.fillStyle = `hsla(${hue}, 100%, 50%, 1)`;
+            const relW = width * valueEased;
+            const relX = x + (width - relW) / 2;
+            context.fillRect(relX, 0, relW, canvas.height);
+            x += width;
+            values[i] = valueEased;
+          });
+          const keys = Object.keys(dom).map(
+            (a) => `${a}: ${dom[a].toFixed(1)}`
+          );
+          context.font = "bold 24px 'Andale Mono',monospace";
+          context.fillStyle = "white";
+          context.textAlign = "center";
+          context.fillText(
+            keys.join("\n"),
+            canvas.width * 0.5,
+            canvas.height - 24
+          );
+        }
+
+        function loopOctaveAgnostic() {
+          requestAnimationFrame(loopOctaveAgnostic);
+          canvas.width = window.innerWidth * 2;
+          canvas.height = window.innerHeight * 2;
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          const width = (1 / 12) * canvas.width;
+          const maxVol = (1 / 3) * 1;
+
+          analyserFreq.getByteFrequencyData(dataArrayFreq);
+          const dom = [];
+          notes.forEach((note, i) => {
+            const freq = dataArrayFreq[bandIndexes[i]];
+            const valuePrev = values[i];
+            const valueNew = Math.pow(Math.min(1, freq / 128), 10);
+            const valueEased = valuePrev + (valueNew - valuePrev) * 0.95;
+            const step = note.index % 12;
+            dom[step] = dom[step] || [step, 0];
+            dom[step][1] = Math.min(5, dom[step][1] + valueEased);
+            values[i] = valueEased;
+          });
+          dom.sort((a, b) => b[1] - a[1]);
+          dom.forEach(([index, volume], i) => {
+            if (i < 3) {
+              const value = (volume / 5) * maxVol;
+              const hue = Math.round((i / 12) * 360);
+              const alpha = value.toFixed(4);
+              context.fillStyle = `hsla(${hue}, 100%, 50%, ${alpha})`;
+              context.fillRect(index * width, 0, width, canvas.height);
+              oscillators[index + 12].gain.linearRampToValueAtTime(
+                value,
+                audioContext.currentTime + 0.01
+              );
+            } else {
+              oscillators[index + 12].gain.linearRampToValueAtTime(
+                0,
+                audioContext.currentTime + 0.01
+              );
+            }
+          });
+        }
+      }
+    </script>
+  </body>
+</html>
