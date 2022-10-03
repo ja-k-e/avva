@@ -2,7 +2,7 @@ import { NOTES_LIBRARY, STEP_NOTATIONS } from "musical-scale";
 
 const NOTES = Object.values(NOTES_LIBRARY).slice(24, 84);
 
-type Notation = typeof STEP_NOTATIONS[0];
+export type Notation = typeof STEP_NOTATIONS[0];
 type NotationData = { value: number; max: number; octaves: number };
 
 export class Detect {
@@ -74,9 +74,10 @@ export class Detect {
       0
     );
     const noteData = notationDataMapAsEntries.map(
-      ([notation, { octaves, value, max }]) => {
+      ([notationRaw, { octaves, value, max }]) => {
+        const notation = notationRaw as Notation;
         const prominence = value / totalAllValues;
-        const index = STEP_NOTATIONS.indexOf(notation as Notation);
+        const index = STEP_NOTATIONS.indexOf(notation);
         const ratio = value / octaves;
         return { notation, value, index, max, prominence, ratio };
       }

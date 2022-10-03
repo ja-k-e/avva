@@ -18,7 +18,7 @@ async function initialize() {
 
   const detect = new Detect();
   const synth = new Synth();
-  synth.loop();
+  synth.start();
   try {
     await detect.start();
     loop();
@@ -30,7 +30,7 @@ async function initialize() {
     window.requestAnimationFrame(loop);
     const { notes } = detect.tick();
     const { notation, value, index, max, prominence, ratio } = notes[noteFocus];
-    synth.tick(notation, max);
+    synth.tick(notation, max, max, max);
 
     document.body.style.setProperty("--note-index", index.toString());
     document.body.style.setProperty("--note-value", value.toString());
