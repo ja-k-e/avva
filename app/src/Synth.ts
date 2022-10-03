@@ -16,10 +16,8 @@ const OCTAVE_STEP_FREQUENCIES: {
 };
 
 const MAIN_GAIN = 0.05;
-const NOTE_CHANCE = 0.6;
-const TWINKLE_CHANCE = 0.7;
-
-const selectRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const NOTE_CHANCE = 0.75;
+const TWINKLE_CHANCE = 0.85;
 
 export class Synth {
   step: number = 0;
@@ -27,7 +25,7 @@ export class Synth {
     synthType: "triangle",
     synthModType: "sine",
     synthTwinkleType: "sine",
-    synthTwinkleModType: "sawtooth",
+    synthTwinkleModType: "triangle",
     synth(sat) {
       return {
         attack: 0.01,
