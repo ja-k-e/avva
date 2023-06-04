@@ -21,6 +21,7 @@
 
     canvas {
       background: black;
+      image-rendering: pixelated;
     }
 
     audio {
@@ -38,8 +39,6 @@
   <canvas></canvas>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.36/Tone.min.js"></script>
-  <script type="module" src="./Detector.js"></script>
-  <script type="module" src="./Synth.js"></script>
   <script type="module">
     import { Detector } from "./Detector.js";
     import { Synth } from "./Synth.js";
@@ -68,60 +67,61 @@
       function loop() {
         requestAnimationFrame(loop);
 
-        canvas.width = window.innerWidth * 2;
-        canvas.height = window.innerHeight * 2;
+        canvas.width = window.innerWidth * 0.1;
+        canvas.height = window.innerHeight * 0.1;
         context.clearRect(0, 0, canvas.width, canvas.height);
 
         const { notes, label, chordChange, option, sorted } = detector.tick();
         const string = [];
 
-        // if (synth && (chordChange||option.chord)) {
-        //   synth.play(option);
-        // }
+        if (synth && chordChange && option.chord) {
+          synth.playChord(option.chord);
+        }
 
-        // let x = 0;
-        // notes.forEach(({ prominence, index, notation, value, ratio }) => {
-        //   const hue = Math.round((index / 12) * 360);
-        //   context.fillStyle = `oklch(${value * 100}% 1 ${hue})`;
-        //   context.fillRect(
-        //     x * canvas.width,
-        //     0,
-        //     canvas.width * prominence,
-        //     canvas.height
-        //   );
-        //   x += prominence;
-        //   if (prominence > 0.3) {
-        //     string.push(notation)
-        //   }
-        // });
-
-        const centerX = canvas.width * 0.5;
-        const centerY = canvas.height * 0.5;
-        // const fullRadius = Math.sqrt(centerX * centerX + centerY * centerY);
-        const fullRadius =  Math.min(canvas.width, canvas.height) * 0.5;
-        let radius = fullRadius;
-        context.fillStyle = `oklch(${sorted[0].value * 100}% 1 ${Math.round((sorted[0].index / 12) * 360)})`;
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        sorted.forEach(({ prominence, index, notation, value, ratio }) => {
+        let x = 0;
+        notes.forEach(({ prominence, index, notation, value, ratio }) => {
           const hue = Math.round((index / 12) * 360);
-          context.beginPath();
           context.fillStyle = `oklch(${value * 100}% 1 ${hue})`;
-          context.strokeStyle = `white`;
-          context.lineWidth = 4;
-          context.arc(centerX, centerY, radius, 0, Math.PI * 2);
-          context.fill();
-          context.stroke();
-          radius = fullRadius * prominence;
+          context.fillRect(
+            x * canvas.width,
+            0,
+            canvas.width * prominence,
+            canvas.height
+          );
+          x += prominence;
           if (prominence > 0.2) {
             string.push(notation)
           }
         });
 
+        // const centerX = canvas.width * 0.5;
+        // const centerY = canvas.height * 0.5;
+        // // const fullRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+        // const fullRadius = Math.min(canvas.width, canvas.height) * 0.5;
+        // let radius = fullRadius;
+        // const reversed = sorted.reverse();
+        // context.fillStyle = `oklch(${sorted[0].value * 100}% 1 ${Math.round((sorted[0].index / 12) * 360)})`;
+        // context.fillRect(0, 0, canvas.width, canvas.height);
+        // reversed.forEach(({ prominence, index, notation, value, ratio }) => {
+        //   const hue = Math.round((index / 12) * 360);
+        //   context.beginPath();
+        //   context.fillStyle = `oklch(${value * 100}% 1 ${hue})`;
+        //   // context.strokeStyle = `white`;
+        //   context.lineWidth = 4;
+        //   context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        //   context.fill();
+        //   // context.stroke();
+        //   radius = fullRadius * (1 - prominence);
+        //   if (prominence > 0.2) {
+        //     string.push(notation)
+        //   }
+        // });
+
         if (synth) {
           synth.playNotes(string);
         }
 
-        const fontSize = 100;
+        const fontSize = canvas.height * 0.1;
         context.font = `bold ${fontSize}px 'Andale Mono',monospace`;
         context.fillStyle = `oklch(100% 0 360)`;
         context.textAlign = "center";
