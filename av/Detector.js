@@ -84,7 +84,7 @@ export class Detector {
     const entries = Object.entries(tracking);
     const total = entries.reduce((a, b) => a + b[1].value, 0);
     const noteData = entries.map(([notation, { octaves, value }]) => {
-      const prominence = value / total;
+      const prominence = value ? value / total : 0;
       const index = STEP_NOTATIONS.indexOf(notation);
       const ratio = value / octaves;
       return { notation, value, index, prominence, ratio };

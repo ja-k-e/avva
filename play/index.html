@@ -1,119 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AVVA</title>
 
-    <style>
-      html,
-      body,
-      canvas {
-        height: 100%;
-        width: 100%;
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AVVA</title>
+
+  <style>
+    html,
+    body,
+    canvas {
+      height: 100%;
+      width: 100%;
+    }
+
+    body {
+      margin: 0;
+    }
+
+    canvas {
+      background: black;
+    }
+
+    audio {
+      display: none;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 999;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.36/Tone.min.js"></script>
+  <script type="module" src="./Detector.js"></script>
+  <script type="module" src="./Synth.js"></script>
+  <script type="module">
+    import { Detector } from "./Detector.js";
+    import { Synth } from "./Synth.js";
+    const canvas = document.querySelector("canvas");
+    const context = canvas.getContext("2d");
+
+    let initialized = false;
+
+    canvas.addEventListener("click", initialize);
+
+    async function initialize() {
+      if (initialized) {
+        return;
+      }
+      initialized = true;
+
+      const detector = new Detector();
+      const synth = new Synth();
+      try {
+        await detector.start();
+        loop();
+      } catch (e) {
+        console.log(e);
       }
 
-      body {
-        margin: 0;
-      }
+      function loop() {
+        requestAnimationFrame(loop);
 
-      canvas {
-        background: black;
-      }
-      audio {
-        display: none;
-        position: fixed;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 999;
-      }
-    </style>
-  </head>
+        canvas.width = window.innerWidth * 2;
+        canvas.height = window.innerHeight * 2;
+        context.clearRect(0, 0, canvas.width, canvas.height);
 
-  <body>
-    <canvas></canvas>
+        const { notes, label, chordChange, option, sorted } = detector.tick();
+        const string = [];
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.36/Tone.min.js"></script>
-    <script type="module" src="./Detector.js"></script>
-    <script type="module" src="./Synth.js"></script>
-    <script type="module">
-      import { Detector } from "./Detector.js";
-      import { Synth } from "./Synth.js";
-      const canvas = document.querySelector("canvas");
-      const context = canvas.getContext("2d");
+        // if (synth && (chordChange||option.chord)) {
+        //   synth.play(option);
+        // }
 
-      let initialized = false;
+        // let x = 0;
+        // notes.forEach(({ prominence, index, notation, value, ratio }) => {
+        //   const hue = Math.round((index / 12) * 360);
+        //   context.fillStyle = `oklch(${value * 100}% 1 ${hue})`;
+        //   context.fillRect(
+        //     x * canvas.width,
+        //     0,
+        //     canvas.width * prominence,
+        //     canvas.height
+        //   );
+        //   x += prominence;
+        //   if (prominence > 0.3) {
+        //     string.push(notation)
+        //   }
+        // });
 
-      canvas.addEventListener("click", initialize);
-
-      async function initialize() {
-        if (initialized) {
-          return;
-        }
-        initialized = true;
-
-        const detector = new Detector();
-        const synth = new Synth();
-        try {
-          await detector.start();
-          loop();
-        } catch (e) {
-          console.log(e);
-        }
-
-        function loop() {
-          requestAnimationFrame(loop);
-
-          canvas.width = window.innerWidth * 2;
-          canvas.height = window.innerHeight * 2;
-          context.clearRect(0, 0, canvas.width, canvas.height);
-
-          const { notes, label, chordChange, option } = detector.tick();
-          // if (synth && (chordChange||option.chord)) {
-          //   synth.play(option);
-          // }
-
-          let x = 0;
-
-          const string = [];
-          notes.forEach(({ prominence, index, notation, value, ratio }) => {
-            const hue = Math.round((index / 12) * 360);
-            context.fillStyle = `oklch(${value * 100}% 1 ${hue})`;
-            context.fillRect(
-              x * canvas.width,
-              0,
-              canvas.width * prominence,
-              canvas.height
-            );
-            x += prominence;
-            if (prominence > 0.3) {
-              string.push(notation)
-            }
-          });
-
-          if (synth) {
-            synth.playNotes(string);
+        const centerX = canvas.width * 0.5;
+        const centerY = canvas.height * 0.5;
+        // const fullRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+        const fullRadius =  Math.min(canvas.width, canvas.height) * 0.5;
+        let radius = fullRadius;
+        context.fillStyle = `oklch(${sorted[0].value * 100}% 1 ${Math.round((sorted[0].index / 12) * 360)})`;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        sorted.forEach(({ prominence, index, notation, value, ratio }) => {
+          const hue = Math.round((index / 12) * 360);
+          context.beginPath();
+          context.fillStyle = `oklch(${value * 100}% 1 ${hue})`;
+          context.strokeStyle = `white`;
+          context.lineWidth = 4;
+          context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+          context.fill();
+          context.stroke();
+          radius = fullRadius * prominence;
+          if (prominence > 0.2) {
+            string.push(notation)
           }
+        });
 
-          context.font = "bold 144px 'Andale Mono',monospace";
-          context.fillStyle = "white";
-          context.textAlign = "center";
-
-          context.fillText(
-            string.join("·"),
-            canvas.width * 0.5,
-            canvas.height * 0.5
-          );
-
-          // context.fillText(
-          //   option.chord ? label : "",
-          //   canvas.width * 0.5,
-          //   canvas.height * 0.5
-          // );
+        if (synth) {
+          synth.playNotes(string);
         }
+
+        const fontSize = 100;
+        context.font = `bold ${fontSize}px 'Andale Mono',monospace`;
+        context.fillStyle = `oklch(100% 0 360)`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+
+        context.fillText(
+          string.join("·"),
+          canvas.width * 0.5,
+          canvas.height * 0.5
+        );
       }
-    </script>
-  </body>
+    }
+  </script>
+</body>
+
 </html>

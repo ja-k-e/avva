@@ -8,7 +8,7 @@ export class Synth {
       synth.set({
         envelope: { attack: 0.2 },
         oscillator: { type: "triangle4" },
-        portamento: 1
+        portamento: 0.5
       });
       const pan = new Tone.Panner();
       pan.pan.value = ((i / this.synths.length) - 0.5) / 0.5;
