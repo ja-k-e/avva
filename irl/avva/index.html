@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AVVA:VA</title>
+
+  <style>
+    html,
+    body,
+    canvas {
+      height: 100%;
+      width: 100%;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    canvas {
+      background: black;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    video {
+      height: 80px;
+      left: 0;
+      position: fixed;
+      top: 0;
+      width: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.36/Tone.min.js"></script>
+  <script type="module">
+    import { Synth } from "../Synth.js";
+    import { Detector } from "../Detector.js";
+    const canvas = document.querySelector("canvas");
+    const context = canvas.getContext("2d");
+
+    let initialized = false;
+
+    canvas.addEventListener("click", initialize);
+
+    async function initialize() {
+      if (initialized) {
+        return;
+      }
+      initialized = true;
+
+      const detector = new Detector(canvas, context);
+      const synth = new Synth();
+      try {
+        await detector.start();
+        loop();
+      } catch (e) {
+        console.log(e);
+      }
+
+      function loop() {
+        requestAnimationFrame(loop);
+
+        canvas.width = window.innerWidth * 0.1;
+        canvas.height = window.innerHeight * 0.1;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        const audioResult = detector.tickAudio();
+
+        let x = 0;
+        audioResult.notes.forEach(({ prominence, index, notation, value, ratio }) => {
+          const hue = Math.floor((index / 12) * 360);
+          context.fillStyle = `hsl(${hue}, 100%, 60%)`;
+          context.fillRect(
+            x * canvas.width,
+            0,
+            canvas.width * prominence,
+            canvas.height
+          );
+          x += prominence;
+        });
+
+        const videoResult = detector.tickVideo();
+        if (synth && videoResult.chordChange && videoResult.option.chord) {
+          synth.playChord(videoResult.option.chord);
+        }
+        const string = [];
+        x = 0;
+
+        videoResult.notes.forEach(({ prominence, index, notation, value, ratio }) => {
+          const hue = Math.round((index / 12) * 360);
+          context.fillStyle = `hsl(${hue}, 100%, 60%)`;
+          context.fillRect(
+            x * canvas.width,
+            canvas.height * 0.4,
+            canvas.width * prominence,
+            canvas.height * 0.2
+          );
+          x += prominence;
+          if (prominence > 0.2) {
+            string.push(notation)
+          }
+        });
+
+        if (synth) {
+          synth.playNotes(string);
+        }
+
+        const fontSize = canvas.height * 0.1;
+        context.font = `bold ${fontSize}px 'Andale Mono',monospace`;
+        context.fillStyle = `oklch(100% 0 360)`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+
+        context.fillText(
+          string.join("·"),
+          canvas.width * 0.5,
+          canvas.height * 0.5
+        );
+      }
+    }
+  </script>
+</body>
+
+</html>
