@@ -8,15 +8,24 @@ export class Synth {
   }
 
   setupChord(main) {
-    this.chord = [new Tone.Synth(), new Tone.Synth(), new Tone.Synth(), new Tone.Synth(), new Tone.Synth(), new Tone.Synth(), new Tone.Synth(), new Tone.Synth()];
+    this.chord = [
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+    ];
     this.chord.forEach((synth, i) => {
       synth.set({
         envelope: { attack: 0.3 },
         oscillator: { type: "sine4" },
-        portamento: 1
+        portamento: 1,
       });
       const pan = new Tone.Panner();
-      pan.pan.value = ((i / this.chord.length) - 0.5) / 0.5;
+      pan.pan.value = (i / this.chord.length - 0.5) / 0.5;
       const gain = new Tone.Gain();
       gain.gain.value = 0.1;
       synth.connect(pan);
@@ -27,15 +36,24 @@ export class Synth {
   }
 
   setupNotes(main) {
-    this.synths = [new Tone.Synth(), new Tone.Synth(), new Tone.Synth(), new Tone.Synth(), new Tone.Synth(), new Tone.Synth(), new Tone.Synth(), new Tone.Synth()];
+    this.synths = [
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+      new Tone.Synth(),
+    ];
     this.synths.forEach((synth, i) => {
       synth.set({
         envelope: { attack: 0.2 },
         oscillator: { type: "triangle4" },
-        portamento: 0.5
+        portamento: 0.5,
       });
       const pan = new Tone.Panner();
-      pan.pan.value = ((i / this.synths.length) - 0.5) / 0.5;
+      pan.pan.value = (i / this.synths.length - 0.5) / 0.5;
       const gain = new Tone.Gain();
       gain.gain.value = 0.1;
       synth.connect(pan);
@@ -47,7 +65,7 @@ export class Synth {
 
   playChord(chord) {
     this.chord.forEach((synth, i) => {
-      const {notation, octave} = chord.notes[i % chord.notes.length];
+      const { notation, octave } = chord.notes[i % chord.notes.length];
       synth.setNote(`${notation}${octave + i < 4 ? 2 : 5}`);
     });
   }
