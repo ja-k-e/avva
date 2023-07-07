@@ -12,23 +12,30 @@ export class Synth {
 
   setupBass(main) {
     const gain = new Tone.Gain();
-    gain.gain.value = 0.2;
-    this.bass = new Tone.Synth();
+    gain.gain.value = 0.5;
+    this.bass = new Tone.DuoSynth();
     this.bassPattern = new Tone.Pattern(
       (time, note) => {
         if (this.chordStarted) {
-          this.bass.triggerAttackRelease(note, "4n", time);
+          this.bass.triggerAttackRelease(note, "8n", time);
         }
       },
       ["C2"],
       "randomWalk"
     );
-    this.bassPattern.interval = "4n";
+    this.bassPattern.interval = "8n";
     this.bassPattern.humanize = true;
     this.bass.set({
-      envelope: { attack: 0.01 },
-      oscillator: { type: "square4" },
-      portamento: 0.01,
+      portamento: 0.05,
+      vibratoAmount: 0.4,
+      voice0: {
+        envelope: { attack: 0.1 },
+        oscillator: { type: "square4" },
+      },
+      voice1: {
+        envelope: { attack: 0.1 },
+        oscillator: { type: "triangle" },
+      },
     });
     this.bass.connect(gain);
     gain.connect(main);
@@ -37,34 +44,50 @@ export class Synth {
 
   setupChord(main) {
     this.chord = new Tone.PolySynth(Tone.DuoSynth, {
-      envelope: { attack: 0.3, decay: 0.5 },
-      oscillator: { type: "triangle4" },
       portamento: 1,
+      harmonicity: 0.5,
+      vibratoAmount: 0.6,
+      voice0: {
+        envelope: { attack: 0.3, decay: 0.5 },
+        oscillator: { type: "triangle" },
+      },
+      voice1: {
+        envelope: { attack: 0.3, decay: 0.5 },
+        oscillator: { type: "sawtooth" },
+      },
     });
     const gain = new Tone.Gain();
-    gain.gain.value = 0.1;
+    gain.gain.value = 0.05;
     this.chord.connect(gain);
     gain.connect(main);
   }
 
   setupNotes(main) {
     this.synths = [
-      new Tone.Synth(),
-      new Tone.Synth(),
-      new Tone.Synth(),
-      new Tone.Synth(),
-      new Tone.Synth(),
+      new Tone.DuoSynth(),
+      new Tone.DuoSynth(),
+      new Tone.DuoSynth(),
+      new Tone.DuoSynth(),
+      new Tone.DuoSynth(),
     ];
     this.synths.forEach((synth, i) => {
       synth.set({
-        envelope: { attack: 0.2 },
-        oscillator: { type: "triangle4" },
-        portamento: 0.5,
+        portamento: 0.6,
+        harmonicity: 1,
+        vibratoAmount: 0.6,
+        voice0: {
+          envelope: { attack: 0.3 },
+          oscillator: { type: "triangle" },
+        },
+        voice1: {
+          envelope: { attack: 0.3 },
+          oscillator: { type: "sawtooth" },
+        },
       });
       const pan = new Tone.Panner();
       pan.pan.value = (i / this.synths.length - 0.5) / 0.5;
       const gain = new Tone.Gain();
-      gain.gain.value = 0.1;
+      gain.gain.value = 0.05;
       synth.connect(pan);
       pan.connect(gain);
       gain.connect(main);
