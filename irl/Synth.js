@@ -2,44 +2,11 @@ export class Synth {
   constructor() {
     const main = new Tone.Gain();
     main.toDestination();
-    main.gain.value = 0.6;
+    main.gain.value = 0.8;
     this.setupChord(main);
-    this.setupBass(main);
     this.setupNotes(main);
     Tone.Transport.start();
     Tone.Transport.bpm.value = 90;
-  }
-
-  setupBass(main) {
-    const gain = new Tone.Gain();
-    gain.gain.value = 0.5;
-    this.bass = new Tone.DuoSynth();
-    this.bassPattern = new Tone.Pattern(
-      (time, note) => {
-        if (this.chordStarted) {
-          this.bass.triggerAttackRelease(note, "8n", time);
-        }
-      },
-      ["C2"],
-      "randomWalk"
-    );
-    this.bassPattern.interval = "8n";
-    this.bassPattern.humanize = true;
-    this.bass.set({
-      portamento: 0.05,
-      vibratoAmount: 0.4,
-      voice0: {
-        envelope: { attack: 0.1 },
-        oscillator: { type: "square4" },
-      },
-      voice1: {
-        envelope: { attack: 0.1 },
-        oscillator: { type: "triangle" },
-      },
-    });
-    this.bass.connect(gain);
-    gain.connect(main);
-    this.bassPattern.start();
   }
 
   setupChord(main) {
@@ -63,15 +30,25 @@ export class Synth {
   }
 
   setupNotes(main) {
-    this.synths = [
-      new Tone.DuoSynth(),
-      new Tone.DuoSynth(),
-      new Tone.DuoSynth(),
-      new Tone.DuoSynth(),
-      new Tone.DuoSynth(),
-    ];
-    this.synths.forEach((synth, i) => {
-      synth.set({
+    const synthsBass = [new Tone.DuoSynth(), new Tone.DuoSynth()];
+    const synthsTreble = [new Tone.DuoSynth(), new Tone.DuoSynth()];
+    this.synths = { bass: synthsBass, treble: synthsTreble };
+    synthsBass.forEach((synth, i) => {
+      initSynth(synth, 0.2, i / synthsBass.length, {
+        portamento: 0.05,
+        vibratoAmount: 0.4,
+        voice0: {
+          envelope: { attack: 0.1 },
+          oscillator: { type: "square4" },
+        },
+        voice1: {
+          envelope: { attack: 0.1 },
+          oscillator: { type: "triangle" },
+        },
+      });
+    });
+    synthsTreble.forEach((synth, i) => {
+      initSynth(synth, 0.025, i / synthsTreble.length, {
         portamento: 0.6,
         harmonicity: 1,
         vibratoAmount: 0.6,
@@ -84,22 +61,25 @@ export class Synth {
           oscillator: { type: "sawtooth" },
         },
       });
+    });
+
+    function initSynth(synth, volume, ratio, settings) {
+      synth.set(settings);
       const pan = new Tone.Panner();
-      pan.pan.value = (i / this.synths.length - 0.5) / 0.5;
+      pan.pan.value = (ratio - 0.5) / 0.5;
       const gain = new Tone.Gain();
-      gain.gain.value = 0.05;
+      gain.gain.value = volume;
       synth.connect(pan);
       pan.connect(gain);
       gain.connect(main);
-    });
+    }
   }
 
   playChord(chord) {
-    const notes = [];
-    this.bassPattern.values = chord.notes.map(({ notation, octave }, i) => {
-      notes.push(`${notation}${octave + Math.floor(i / 3) + 4}`);
-      return `${notation}${octave + Math.floor(i / 3) + 1}`;
-    });
+    const notes = chord.notes.map(
+      ({ notation, octave }, i) =>
+        `${notation}${octave + Math.floor(i / 3) + 4}`
+    );
     const release = [];
     const attack = [...notes];
     (this.prevChord || []).forEach((n) => {
@@ -122,11 +102,19 @@ export class Synth {
       return;
     }
     this.prevNotes = joined;
-    this.synths.forEach((synth, i) => {
+    this.synths.treble.forEach((synth, i) => {
       const note = notes[i % notes.length];
       if (note) {
         synth[this.notesStarted ? "setNote" : "triggerAttack"](
           `${note}${4 + Math.floor(i / 3)}`
+        );
+      }
+    });
+    this.synths.bass.forEach((synth, i) => {
+      const note = notes[i % notes.length];
+      if (note) {
+        synth[this.notesStarted ? "setNote" : "triggerAttack"](
+          `${note}${2 + Math.floor(i / 3)}`
         );
       }
     });

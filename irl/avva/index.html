@@ -26,11 +26,11 @@
       }
 
       video {
-        height: 80px;
-        left: 0;
+        height: auto;
+        left: calc(50% - 4vw);
         position: fixed;
-        top: 0;
-        width: auto;
+        bottom: 1vh;
+        width: 8vw;
       }
     </style>
   </head>
@@ -81,7 +81,8 @@
             }
           );
 
-          visual.superimposeVideo(detector.video);
+          // brings in video element
+          // visual.superimposeVideo(detector.video);
           const videoResult = detector.tickVideo();
           if (synth && videoResult.chordChange && videoResult.option.chord) {
             synth.playChord(videoResult.option.chord);
