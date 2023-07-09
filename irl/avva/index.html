@@ -97,16 +97,16 @@
             const videoResult = detector.processImageData(visual.imageData());
             // if chord change detected play chord
             if (videoResult.chordChange && videoResult.option.chord) {
-              synth.playChord(videoResult.option.chord);
+              synth.setChord(videoResult.option.chord);
             }
 
-            const notations = [];
+            const notes = [];
 
             // render notes seen on canvas
             const blocksFromVideo = videoResult.notes.map(
               ({ prominence, index, notation, value, ratio }) => {
                 if (prominence > 0.2) {
-                  notations.push(notation);
+                  notes.push({ notation, volume: ratio });
                 }
                 return {
                   position: index / 12,
@@ -118,10 +118,10 @@
             visual.render(blocksFromVideo, 0.2);
 
             // play notes seen on canvas
-            synth.playNotes(notations);
+            synth.setNotes(notes);
 
             // render notes seen on canvas
-            visual.text(0.1, notations.join("·"));
+            visual.text(0.1, notes.map(({ notation }) => notation).join("·"));
           }
         } catch (e) {
           console.log(e);

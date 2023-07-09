@@ -46,8 +46,21 @@ export class Synth {
     main.gain.value = 0.8;
     this.setupChord(main);
     this.setupNotes(main);
+    this.prevChord = [];
+    Tone.Transport.scheduleRepeat(this.loop.bind(this), "16n");
+    Tone.Transport.bpm.value = 140;
     Tone.Transport.start();
-    Tone.Transport.bpm.value = 90;
+    this.dataChord = [];
+    this.dataNotes = [];
+  }
+
+  loop(time) {
+    if (this.chordChange) {
+      this.playChord(time);
+    }
+    if (this.notesChange) {
+      this.playNotes(time);
+    }
   }
 
   setupChord(main) {
@@ -62,33 +75,53 @@ export class Synth {
     const synthsBass = [new Tone.DuoSynth(), new Tone.DuoSynth()];
     const synthsTreble = [new Tone.DuoSynth(), new Tone.DuoSynth()];
     this.synths = { bass: synthsBass, treble: synthsTreble };
+    this.gains = {
+      bass: { volume: 0.2, nodes: [] },
+      treble: { volume: 0.1, nodes: [] },
+    };
     synthsBass.forEach((synth, i) => {
-      initSynth(synth, 0.2, i / synthsBass.length, SETTINGS_SYNTH_BASS);
+      initSynth(
+        synth,
+        this.gains.bass,
+        i / synthsBass.length,
+        SETTINGS_SYNTH_BASS
+      );
     });
     synthsTreble.forEach((synth, i) => {
-      initSynth(synth, 0.025, i / synthsTreble.length, SETTINGS_SYNTH_TREBLE);
+      initSynth(
+        synth,
+        this.gains.treble,
+        i / synthsTreble.length,
+        SETTINGS_SYNTH_TREBLE
+      );
     });
 
-    function initSynth(synth, volume, ratio, settings) {
+    function initSynth(synth, gains, ratio, settings) {
       synth.set(settings);
       const pan = new Tone.Panner();
       pan.pan.value = (ratio - 0.5) / 0.5;
       const gain = new Tone.Gain();
-      gain.gain.value = volume;
+      gain.gain.value = 0;
+      gains.nodes.push(gain);
       synth.connect(pan);
       pan.connect(gain);
       gain.connect(main);
     }
   }
 
-  playChord(chord) {
-    const notes = chord.notes.map(
+  setChord(chord) {
+    this.dataChord = chord.notes.map(
       ({ notation, octave }, i) =>
         `${notation}${octave + Math.floor(i / 3) + 4}`
     );
+    this.chordChange = true;
+  }
+
+  playChord(time) {
+    this.chordChange = false;
     const release = [];
-    const attack = [...notes];
-    (this.prevChord || []).forEach((n) => {
+    const attack = [...this.dataChord];
+    this.prevChord.forEach((n) => {
       const index = attack.indexOf(n);
       if (index !== -1) {
         attack.splice(index, 1);
@@ -96,32 +129,44 @@ export class Synth {
         release.push(n);
       }
     });
-    this.prevChord = notes;
-    this.chord.triggerRelease(release);
-    this.chord.triggerAttack(attack);
+    this.prevChord = [...this.dataChord];
+    this.chord.triggerRelease(release, time);
+    this.chord.triggerAttack(attack, time);
     this.chordStarted = true;
   }
 
-  playNotes(notes) {
+  setNotes(notes) {
     const joined = notes.join("");
     if (joined === this.prevNotes) {
       return;
     }
     this.prevNotes = joined;
+    this.dataNotes = notes;
+    this.notesChange = true;
+  }
+
+  playNotes(time) {
+    this.notesChange = false;
     this.synths.treble.forEach((synth, i) => {
-      const note = notes[i % notes.length];
+      const note = this.dataNotes[i % this.dataNotes.length];
       if (note) {
         synth[this.notesStarted ? "setNote" : "triggerAttack"](
-          `${note}${4 + Math.floor(i / 3)}`
+          `${note.notation}${4 + Math.floor(i / 3)}`,
+          time
         );
+        this.gains.treble.nodes[i].gain.value =
+          this.gains.treble.volume * note.volume;
       }
     });
     this.synths.bass.forEach((synth, i) => {
-      const note = notes[i % notes.length];
+      const note = this.dataNotes[i % this.dataNotes.length];
       if (note) {
         synth[this.notesStarted ? "setNote" : "triggerAttack"](
-          `${note}${2 + Math.floor(i / 3)}`
+          `${note.notation}${2 + Math.floor(i / 3)}`,
+          time
         );
+        this.gains.bass.nodes[i].gain.value =
+          this.gains.bass.volume * note.volume;
       }
     });
     this.notesStarted = true;

@@ -68,7 +68,7 @@ export class Detector {
       // value: loudness of note (across all octaves)
       // index: numeric position of note (C-B)
       // prominence: how prominent note is across all notes
-      // ratio: 0-1 loundess of note (value / octaves)
+      // ratio: 0-1 loundess of note (value /)
       return { notation, value, index, prominence, ratio };
     });
 
