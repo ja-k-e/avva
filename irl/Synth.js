@@ -39,6 +39,8 @@ const SETTINGS_SYNTH_TREBLE = {
   },
 };
 
+const CHORD_VOLUME = 0.1;
+
 export class Synth {
   constructor() {
     const main = new Tone.Gain();
@@ -65,10 +67,10 @@ export class Synth {
 
   setupChord(main) {
     this.chord = new Tone.PolySynth(Tone.DuoSynth, SETTINGS_CHORD);
-    const gain = new Tone.Gain();
-    gain.gain.value = 0.05;
-    this.chord.connect(gain);
-    gain.connect(main);
+    this.chordGain = new Tone.Gain();
+    this.chordGain.gain.value = 0;
+    this.chord.connect(this.chordGain);
+    this.chordGain.connect(main);
   }
 
   setupNotes(main) {
@@ -148,6 +150,9 @@ export class Synth {
 
   playNotes(time) {
     this.notesChange = false;
+    const totalVol = this.dataNotes.reduce((n, note) => note.volume + n, 0);
+    const averageVolume = totalVol / this.dataNotes.length;
+    this.chordGain.gain.value = CHORD_VOLUME * averageVolume;
     this.synths.treble.forEach((synth, i) => {
       const note = this.dataNotes[i % this.dataNotes.length];
       if (note) {

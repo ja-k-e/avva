@@ -41,6 +41,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.36/Tone.min.js"></script>
     <script type="module">
       import { Detector } from "../Detector.js";
+      import { Keyboard } from "../Keyboard.js";
       import { Stream } from "../Stream.js";
       import { Synth } from "../Synth.js";
       import { Visual } from "../Visual.js";
@@ -57,6 +58,7 @@
 
         try {
           const detector = new Detector();
+          const keyboard = new Keyboard();
           const stream = new Stream({ audio: true, video: true });
           const synth = new Synth();
           await stream.start();
@@ -77,7 +79,7 @@
 
             // detect notes from microphone
             stream.tickAudio();
-            const audioResult = detector.tickAudio(stream.audioData);
+            const audioResult = detector.processAudioData(stream.audioData);
             // render notes heard from microphone
             const blocksFromAudio = audioResult.notes.map(
               ({ prominence, index, notation, value, ratio }) => {
@@ -89,6 +91,7 @@
               }
             );
             visual.render(blocksFromAudio);
+            // visual.render(keyboard.toBlocks());
 
             // brings in video element
             // visual.superimposeVideo(stream.videoElement);
@@ -96,7 +99,7 @@
             // detect notes from canvas
             const videoResult = detector.processImageData(visual.imageData());
             // if chord change detected play chord
-            if (videoResult.chordChange && videoResult.option.chord) {
+            if (videoResult.option.chord) {
               synth.setChord(videoResult.option.chord);
             }
 

@@ -28,7 +28,7 @@ export class Detector {
     this.hzBandValues = this.hzBandIndexes.map(() => 0);
   }
 
-  tickAudio(audioData) {
+  processAudioData(audioData) {
     const tracking = {};
     notes.forEach(({ notation }, i) => {
       const items = [1, 2, 13, 14, 25, 26, -1, -2, -13, -14, -25, -26];

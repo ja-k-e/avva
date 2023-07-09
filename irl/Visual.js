@@ -43,7 +43,7 @@ export class Visual {
     let x = 0;
     blocks.forEach(({ position, size, volume }) => {
       const hue = Math.floor(position * 360);
-      const fill = `hsl(${hue}, 100%, ${volume * 50 + 20}%)`;
+      const fill = `hsl(${hue}, 100%, ${volume * 50 + 10}%)`;
       this._rect(fill, x, (1 - height) * 0.5, size, height);
       x += size;
     });
