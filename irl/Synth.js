@@ -1,3 +1,44 @@
+const SETTINGS_CHORD = {
+  portamento: 1,
+  harmonicity: 0.5,
+  vibratoAmount: 0.6,
+  voice0: {
+    envelope: { attack: 0.3, decay: 0.5 },
+    oscillator: { type: "triangle" },
+  },
+  voice1: {
+    envelope: { attack: 0.3, decay: 0.5 },
+    oscillator: { type: "sawtooth" },
+  },
+};
+
+const SETTINGS_SYNTH_BASS = {
+  portamento: 0.05,
+  vibratoAmount: 0.4,
+  voice0: {
+    envelope: { attack: 0.1 },
+    oscillator: { type: "square4" },
+  },
+  voice1: {
+    envelope: { attack: 0.1 },
+    oscillator: { type: "triangle" },
+  },
+};
+
+const SETTINGS_SYNTH_TREBLE = {
+  portamento: 0.6,
+  harmonicity: 1,
+  vibratoAmount: 0.6,
+  voice0: {
+    envelope: { attack: 0.3 },
+    oscillator: { type: "triangle" },
+  },
+  voice1: {
+    envelope: { attack: 0.3 },
+    oscillator: { type: "sawtooth" },
+  },
+};
+
 export class Synth {
   constructor() {
     const main = new Tone.Gain();
@@ -10,19 +51,7 @@ export class Synth {
   }
 
   setupChord(main) {
-    this.chord = new Tone.PolySynth(Tone.DuoSynth, {
-      portamento: 1,
-      harmonicity: 0.5,
-      vibratoAmount: 0.6,
-      voice0: {
-        envelope: { attack: 0.3, decay: 0.5 },
-        oscillator: { type: "triangle" },
-      },
-      voice1: {
-        envelope: { attack: 0.3, decay: 0.5 },
-        oscillator: { type: "sawtooth" },
-      },
-    });
+    this.chord = new Tone.PolySynth(Tone.DuoSynth, SETTINGS_CHORD);
     const gain = new Tone.Gain();
     gain.gain.value = 0.05;
     this.chord.connect(gain);
@@ -34,33 +63,10 @@ export class Synth {
     const synthsTreble = [new Tone.DuoSynth(), new Tone.DuoSynth()];
     this.synths = { bass: synthsBass, treble: synthsTreble };
     synthsBass.forEach((synth, i) => {
-      initSynth(synth, 0.2, i / synthsBass.length, {
-        portamento: 0.05,
-        vibratoAmount: 0.4,
-        voice0: {
-          envelope: { attack: 0.1 },
-          oscillator: { type: "square4" },
-        },
-        voice1: {
-          envelope: { attack: 0.1 },
-          oscillator: { type: "triangle" },
-        },
-      });
+      initSynth(synth, 0.2, i / synthsBass.length, SETTINGS_SYNTH_BASS);
     });
     synthsTreble.forEach((synth, i) => {
-      initSynth(synth, 0.025, i / synthsTreble.length, {
-        portamento: 0.6,
-        harmonicity: 1,
-        vibratoAmount: 0.6,
-        voice0: {
-          envelope: { attack: 0.3 },
-          oscillator: { type: "triangle" },
-        },
-        voice1: {
-          envelope: { attack: 0.3 },
-          oscillator: { type: "sawtooth" },
-        },
-      });
+      initSynth(synth, 0.025, i / synthsTreble.length, SETTINGS_SYNTH_TREBLE);
     });
 
     function initSynth(synth, volume, ratio, settings) {

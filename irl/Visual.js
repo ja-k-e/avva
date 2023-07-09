@@ -37,6 +37,16 @@ export class Visual {
     );
   }
 
+  render(blocks, height = 1) {
+    let x = 0;
+    blocks.forEach(({ position, size, volume }) => {
+      const hue = Math.floor(position * 360);
+      const fill = `hsl(${hue}, 100%, ${volume * 50 + 20}%)`;
+      this.rect(fill, x, (1 - height) * 0.5, size, height);
+      x += size;
+    });
+  }
+
   text(size, string) {
     this.context.font = `bold ${size * this.height}px 'Andale Mono',monospace`;
     this.context.fillStyle = `oklch(100% 0 360)`;

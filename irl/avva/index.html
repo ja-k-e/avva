@@ -72,14 +72,12 @@
           const audioResult = detector.tickAudio();
 
           let x = 0;
-          audioResult.notes.forEach(
+          const blocksFromAudio = audioResult.notes.map(
             ({ prominence, index, notation, value, ratio }) => {
-              const hue = Math.floor((index / 12) * 360);
-              const fill = `hsl(${hue}, 100%, 60%)`;
-              visual.rect(fill, x, 0, prominence, 1);
-              x += prominence;
+              return { position: index / 12, size: prominence, volume: ratio };
             }
           );
+          visual.render(blocksFromAudio);
 
           // brings in video element
           // visual.superimposeVideo(detector.video);
@@ -88,19 +86,15 @@
             synth.playChord(videoResult.option.chord);
           }
           const string = [];
-          x = 0;
-
-          videoResult.notes.forEach(
+          const blocksFromVideo = videoResult.notes.map(
             ({ prominence, index, notation, value, ratio }) => {
-              const hue = Math.round((index / 12) * 360);
-              const fill = `hsl(${hue}, 100%, 60%)`;
-              visual.rect(fill, x, 0.4, prominence, 0.2);
-              x += prominence;
               if (prominence > 0.2) {
                 string.push(notation);
               }
+              return { position: index / 12, size: prominence, volume: ratio };
             }
           );
+          visual.render(blocksFromVideo, 0.2);
 
           if (synth) {
             synth.playNotes(string);

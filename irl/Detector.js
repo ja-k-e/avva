@@ -113,21 +113,23 @@ export class Detector {
     const imageData = this.visual.imageData();
     const dataCount = imageData.data.length;
     for (let i = 0; i < dataCount; i += 4) {
-      const [h] = rgbToHSL(
+      const [h, _s, l] = rgbToHSL(
         imageData.data[i + 0],
         imageData.data[i + 1],
         imageData.data[i + 2]
       );
       const { notation } = notes[Math.floor(h * 12)];
-      tracking[notation] = tracking[notation] || 0;
-      tracking[notation]++;
+      tracking[notation] = tracking[notation] || { count: 0, lit: 0 };
+      tracking[notation].count++;
+      tracking[notation].lit += l;
     }
     const entries = Object.entries(tracking);
     const total = dataCount / 4;
-    const noteData = entries.map(([notation, value]) => {
-      const prominence = value ? value / total : 0;
+    const noteData = entries.map(([notation, { count, lit }]) => {
+      const value = count ? lit / count : 0;
+      const prominence = count ? count / total : 0;
       const index = STEP_NOTATIONS.indexOf(notation);
-      return { notation, value, index, prominence };
+      return { notation, value, index, prominence, ratio: value };
     });
     // array of notes sorted by prominence
     const sorted = Array.from(noteData).sort(
