@@ -60,18 +60,25 @@
           const stream = new Stream({ audio: true, video: true });
           const synth = new Synth();
           await stream.start();
-          detector.startAudio(stream);
+          detector.initializeAudio(stream);
 
           loop();
 
           function loop() {
             requestAnimationFrame(loop);
 
+            if (!synth) {
+              return;
+            }
+
+            // reset visual
             visual.resize(window.innerWidth * 0.1, window.innerHeight * 0.1);
             visual.clear();
 
+            // detect notes from microphone
             stream.tickAudio();
             const audioResult = detector.tickAudio(stream.audioData);
+            // render notes heard from microphone
             const blocksFromAudio = audioResult.notes.map(
               ({ prominence, index, notation, value, ratio }) => {
                 return {
@@ -85,15 +92,21 @@
 
             // brings in video element
             // visual.superimposeVideo(stream.videoElement);
+
+            // detect notes from canvas
             const videoResult = detector.processImageData(visual.imageData());
-            if (synth && videoResult.chordChange && videoResult.option.chord) {
+            // if chord change detected play chord
+            if (videoResult.chordChange && videoResult.option.chord) {
               synth.playChord(videoResult.option.chord);
             }
-            const string = [];
+
+            const notations = [];
+
+            // render notes seen on canvas
             const blocksFromVideo = videoResult.notes.map(
               ({ prominence, index, notation, value, ratio }) => {
                 if (prominence > 0.2) {
-                  string.push(notation);
+                  notations.push(notation);
                 }
                 return {
                   position: index / 12,
@@ -104,11 +117,11 @@
             );
             visual.render(blocksFromVideo, 0.2);
 
-            if (synth) {
-              synth.playNotes(string);
-            }
+            // play notes seen on canvas
+            synth.playNotes(notations);
 
-            visual.text(0.1, string.join("·"));
+            // render notes seen on canvas
+            visual.text(0.1, notations.join("·"));
           }
         } catch (e) {
           console.log(e);

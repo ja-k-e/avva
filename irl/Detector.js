@@ -21,7 +21,7 @@ const trackingObjectStub = {};
 notes.forEach(({ notation }) => (trackingObjectStub[notation] = 0));
 
 export class Detector {
-  startAudio(stream) {
+  initializeAudio(stream) {
     this.hzBandIndexes = notes.map(({ frequency }) =>
       Math.floor(frequency / stream.bandHz)
     );
@@ -32,7 +32,6 @@ export class Detector {
     const tracking = {};
     notes.forEach(({ notation }, i) => {
       const items = [1, 2, 13, 14, 25, 26, -1, -2, -13, -14, -25, -26];
-      // const items = [1, 2, 13, 14, -1, -2, -13, -14];
       const neighbors = items.map((item) => item + i);
       const self = audioData[this.hzBandIndexes[i]];
 
@@ -65,6 +64,11 @@ export class Detector {
       const prominence = value ? value / total : 0;
       const index = STEP_NOTATIONS.indexOf(notation);
       const ratio = value / octaves;
+      // notation: letter
+      // value: loudness of note (across all octaves)
+      // index: numeric position of note (C-B)
+      // prominence: how prominent note is across all notes
+      // ratio: 0-1 loundess of note (value / octaves)
       return { notation, value, index, prominence, ratio };
     });
 
