@@ -41,6 +41,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.36/Tone.min.js"></script>
     <script type="module">
       import { Detector } from "../Detector.js";
+      import { Stream } from "../Stream.js";
       import { Synth } from "../Synth.js";
       import { Visual } from "../Visual.js";
 
@@ -54,53 +55,63 @@
         }
         initialized = true;
 
-        const detector = new Detector(visual);
-        const synth = new Synth();
         try {
-          await detector.start();
+          const detector = new Detector();
+          const stream = new Stream({ audio: true, video: true });
+          const synth = new Synth();
+          await stream.start();
+          detector.startAudio(stream);
+
           loop();
+
+          function loop() {
+            requestAnimationFrame(loop);
+
+            visual.resize(window.innerWidth * 0.1, window.innerHeight * 0.1);
+            visual.clear();
+
+            stream.tickAudio();
+            const audioResult = detector.tickAudio(stream.audioData);
+            const blocksFromAudio = audioResult.notes.map(
+              ({ prominence, index, notation, value, ratio }) => {
+                return {
+                  position: index / 12,
+                  size: prominence,
+                  volume: ratio,
+                };
+              }
+            );
+            visual.render(blocksFromAudio);
+
+            // brings in video element
+            // visual.superimposeVideo(stream.videoElement);
+            const videoResult = detector.processImageData(visual.imageData());
+            if (synth && videoResult.chordChange && videoResult.option.chord) {
+              synth.playChord(videoResult.option.chord);
+            }
+            const string = [];
+            const blocksFromVideo = videoResult.notes.map(
+              ({ prominence, index, notation, value, ratio }) => {
+                if (prominence > 0.2) {
+                  string.push(notation);
+                }
+                return {
+                  position: index / 12,
+                  size: prominence,
+                  volume: ratio,
+                };
+              }
+            );
+            visual.render(blocksFromVideo, 0.2);
+
+            if (synth) {
+              synth.playNotes(string);
+            }
+
+            visual.text(0.1, string.join("·"));
+          }
         } catch (e) {
           console.log(e);
-        }
-
-        function loop() {
-          requestAnimationFrame(loop);
-
-          visual.resize(window.innerWidth * 0.1, window.innerHeight * 0.1);
-          visual.clear();
-
-          const audioResult = detector.tickAudio();
-
-          let x = 0;
-          const blocksFromAudio = audioResult.notes.map(
-            ({ prominence, index, notation, value, ratio }) => {
-              return { position: index / 12, size: prominence, volume: ratio };
-            }
-          );
-          visual.render(blocksFromAudio);
-
-          // brings in video element
-          // visual.superimposeVideo(detector.video);
-          const videoResult = detector.tickVideo();
-          if (synth && videoResult.chordChange && videoResult.option.chord) {
-            synth.playChord(videoResult.option.chord);
-          }
-          const string = [];
-          const blocksFromVideo = videoResult.notes.map(
-            ({ prominence, index, notation, value, ratio }) => {
-              if (prominence > 0.2) {
-                string.push(notation);
-              }
-              return { position: index / 12, size: prominence, volume: ratio };
-            }
-          );
-          visual.render(blocksFromVideo, 0.2);
-
-          if (synth) {
-            synth.playNotes(string);
-          }
-
-          visual.text(0.1, string.join("·"));
         }
       }
     </script>

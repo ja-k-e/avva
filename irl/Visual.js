@@ -3,9 +3,11 @@ import { rgbToHSL } from "./utils.js";
 export class Visual {
   constructor(onClick) {
     this.canvas = document.querySelector("canvas");
-    this.context = this.canvas.getContext("2d");
+    this.context = this.canvas.getContext("2d", { willReadFrequently: true });
     this.subCanvas = document.createElement("canvas");
-    this.subContext = this.subCanvas.getContext("2d");
+    this.subContext = this.subCanvas.getContext("2d", {
+      willReadFrequently: true,
+    });
     this.subCanvas.width = 20;
     this.subCanvas.height = 20;
     this.canvas.addEventListener("click", onClick);
@@ -27,7 +29,7 @@ export class Visual {
     this.context.clearRect(0, 0, this.width, this.height);
   }
 
-  rect(fill, x, y, w, h) {
+  _rect(fill, x, y, w, h) {
     this.context.fillStyle = fill;
     this.context.fillRect(
       x * this.width,
@@ -42,7 +44,7 @@ export class Visual {
     blocks.forEach(({ position, size, volume }) => {
       const hue = Math.floor(position * 360);
       const fill = `hsl(${hue}, 100%, ${volume * 50 + 20}%)`;
-      this.rect(fill, x, (1 - height) * 0.5, size, height);
+      this._rect(fill, x, (1 - height) * 0.5, size, height);
       x += size;
     });
   }

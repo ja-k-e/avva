@@ -21,66 +21,31 @@ const trackingObjectStub = {};
 notes.forEach(({ notation }) => (trackingObjectStub[notation] = 0));
 
 export class Detector {
-  constructor(visual) {
-    this.visual = visual;
+  startAudio(stream) {
+    this.hzBandIndexes = notes.map(({ frequency }) =>
+      Math.floor(frequency / stream.bandHz)
+    );
+    this.hzBandValues = this.hzBandIndexes.map(() => 0);
   }
 
-  async start() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: true,
-      });
-      this.audioContext = new AudioContext();
-      this.analyser = this.audioContext.createAnalyser();
-      const source = this.audioContext.createMediaStreamSource(stream);
-      source.connect(this.analyser);
-      this.analyser.fftSize = 8192 * 2 * 2;
-
-      this.video = document.createElement("video");
-      document.body.appendChild(this.video);
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.srcObject = stream;
-      this.video.play();
-
-      const bufferLengthFreq = this.analyser.frequencyBinCount;
-      this.data = new Uint8Array(bufferLengthFreq);
-      const bandHz =
-        this.audioContext.sampleRate / 2 / (this.analyser.fftSize / 2);
-
-      this.indexes = notes.map(({ frequency }) =>
-        Math.floor(frequency / bandHz)
-      );
-
-      this.analyser.getByteFrequencyData(this.data);
-      this.values = this.indexes.map(() => 0);
-      return;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  tickAudio() {
-    this.analyser.getByteFrequencyData(this.data);
+  tickAudio(audioData) {
     const tracking = {};
     notes.forEach(({ notation }, i) => {
       const items = [1, 2, 13, 14, 25, 26, -1, -2, -13, -14, -25, -26];
       // const items = [1, 2, 13, 14, -1, -2, -13, -14];
       const neighbors = items.map((item) => item + i);
-      const self = this.data[this.indexes[i]];
+      const self = audioData[this.hzBandIndexes[i]];
 
       // ignoring bands that have louder neighbors
       const max = neighbors.reduce((value, index) => {
         if (index >= 0 && index < count) {
-          value = Math.max(value, this.data[this.indexes[index]]);
+          value = Math.max(value, audioData[this.hzBandIndexes[index]]);
         }
         return value;
       }, 0);
       const freq = self > max ? self : 0;
 
-      const valuePrev = this.values[i];
+      const valuePrev = this.hzBandValues[i];
       const valueNew = Math.pow(Math.min(1, freq / 128), 50);
       const factor = valueNew < valuePrev ? 0.0625 : 0.015625;
       const valueEased = valuePrev + (valueNew - valuePrev) * factor;
@@ -91,7 +56,7 @@ export class Detector {
       tracking[notation].octaves++;
       tracking[notation].value += valueEased;
 
-      this.values[i] = valueEased;
+      this.hzBandValues[i] = valueEased;
     });
 
     const entries = Object.entries(tracking);
@@ -108,9 +73,8 @@ export class Detector {
     };
   }
 
-  tickVideo() {
+  processImageData(imageData) {
     const tracking = { ...trackingObjectStub };
-    const imageData = this.visual.imageData();
     const dataCount = imageData.data.length;
     for (let i = 0; i < dataCount; i += 4) {
       const [h, _s, l] = rgbToHSL(
