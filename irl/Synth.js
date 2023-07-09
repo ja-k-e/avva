@@ -43,12 +43,12 @@ export class Synth {
   constructor() {
     const main = new Tone.Gain();
     main.toDestination();
-    main.gain.value = 0.8;
+    main.gain.value = 0.9;
     this.setupChord(main);
     this.setupNotes(main);
     this.prevChord = [];
-    Tone.Transport.scheduleRepeat(this.loop.bind(this), "16n");
-    Tone.Transport.bpm.value = 140;
+    Tone.Transport.scheduleRepeat((time) => this.loop(time), "8n");
+    Tone.Transport.bpm.value = 120;
     Tone.Transport.start();
     this.dataChord = [];
     this.dataNotes = [];
@@ -76,8 +76,8 @@ export class Synth {
     const synthsTreble = [new Tone.DuoSynth(), new Tone.DuoSynth()];
     this.synths = { bass: synthsBass, treble: synthsTreble };
     this.gains = {
-      bass: { volume: 0.2, nodes: [] },
-      treble: { volume: 0.1, nodes: [] },
+      bass: { volume: 0.3, nodes: [] },
+      treble: { volume: 0.2, nodes: [] },
     };
     synthsBass.forEach((synth, i) => {
       initSynth(
@@ -121,6 +121,7 @@ export class Synth {
     this.chordChange = false;
     const release = [];
     const attack = [...this.dataChord];
+    const currentChord = [...attack];
     this.prevChord.forEach((n) => {
       const index = attack.indexOf(n);
       if (index !== -1) {
@@ -129,9 +130,9 @@ export class Synth {
         release.push(n);
       }
     });
-    this.prevChord = [...this.dataChord];
-    this.chord.triggerRelease(release, time);
+    this.prevChord = currentChord;
     this.chord.triggerAttack(attack, time);
+    this.chord.triggerRelease(release, time);
     this.chordStarted = true;
   }
 
