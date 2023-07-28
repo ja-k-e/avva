@@ -81,16 +81,8 @@
             stream.tickAudio();
             const audioResult = detector.processAudioData(stream.audioData);
             // render notes heard from microphone
-            const blocksFromAudio = audioResult.notes.map(
-              ({ prominence, index, notation, value, ratio }) => {
-                return {
-                  position: index / 12,
-                  size: prominence,
-                  volume: ratio,
-                };
-              }
-            );
-            visual.render(blocksFromAudio);
+            visual.render(Detector.notesToBlocks(audioResult.notes));
+            // render notes from keyboard
             // visual.render(keyboard.toBlocks());
 
             // brings in video element
@@ -103,28 +95,20 @@
               synth.setChord(videoResult.option.chord);
             }
 
-            const notes = [];
-
             // render notes seen on canvas
-            const blocksFromVideo = videoResult.notes.map(
-              ({ prominence, index, notation, value, ratio }) => {
-                if (prominence > 0.2) {
-                  notes.push({ notation, volume: ratio });
-                }
-                return {
-                  position: index / 12,
-                  size: prominence,
-                  volume: ratio,
-                };
-              }
-            );
-            visual.render(blocksFromVideo, 0.2);
+            visual.render(Detector.notesToBlocks(videoResult.notes), 0.2);
+
+            // detected notes
+            const prominent = Detector.notesToProminentNotes(videoResult.notes);
 
             // play notes seen on canvas
-            synth.setNotes(notes);
+            synth.setNotes(prominent);
 
             // render notes seen on canvas
-            visual.text(0.1, notes.map(({ notation }) => notation).join("·"));
+            visual.text(
+              0.1,
+              prominent.map(({ notation }) => notation).join("·")
+            );
           }
         } catch (e) {
           console.log(e);

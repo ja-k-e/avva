@@ -28,6 +28,25 @@ export class Detector {
     this.hzBandValues = this.hzBandIndexes.map(() => 0);
   }
 
+  static notesToBlocks(notes) {
+    return notes.map(({ prominence, index, ratio }) => {
+      return {
+        position: index / 12,
+        size: prominence,
+        volume: ratio,
+      };
+    });
+  }
+
+  static notesToProminentNotes(notes) {
+    return notes.reduce((into, { prominence, notation, ratio }) => {
+      if (prominence > 0.2) {
+        into.push({ notation, volume: ratio });
+      }
+      return into;
+    }, []);
+  }
+
   processAudioData(audioData) {
     const tracking = {};
     notes.forEach(({ notation }, i) => {
